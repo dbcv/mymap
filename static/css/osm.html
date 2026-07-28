@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenStreetMap 表示サンプル</title>
+
+  <!-- LeafletのCSSを読み込み -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    /* 画面全体に地図を表示するスタイル設定 */
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+    }
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 地図を描画する要素 -->
+  <div id="map"></div>
+
+  <!-- LeafletのJavaScriptを読み込み -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // 1. 地図を初期化（初期位置：東京駅、ズームレベル：15）
+    // [緯度, 経度] の順で指定します
+    const map = L.map('map').setView([35.681236, 139.767125], 15);
+
+    // 2. OpenStreetMapのタイルレイヤーを追加
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // 3. マーカーとポップアップを追加（オプション）
+    const marker = L.marker([35.681236, 139.767125]).addTo(map);
+    marker.bindPopup('<b>東京駅</b><br>ここにテキストやHTMLを入れられます。').openPopup();
+  </script>
+
+</body>
+</html>

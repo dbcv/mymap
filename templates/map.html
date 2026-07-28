@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>マイマップ</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            padding: 10px 20px;
+            background: #333;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #map {
+            flex: 1;
+            width: 100%;
+        }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    
+</head>
+
+<body>
+
+    <header>
+        <span>ようこそ {{.Email}} さん</span>
+        <a href="/logout" style="color: #ff8888;">ログアウト</a>
+    </header>
+
+    <!-- 地図エリア -->
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script>
+        // 1. 地図の初期化 (東京中心)
+        const map = L.map('map').setView([35.681236, 139.767125], 13);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        L.Control.geocoder({
+            defaultMarkGeocode: true
+        }).addTo(map);
+
+        // 2. Goサーバーから保存済み地点を取得して描画
+        async function loadLocations() {
+            const res = await fetch('/api/locations');
+            if (!res.ok) return;
+            const locations = await res.json();
+
+            locations.forEach(loc => {
+                // 1. 絵文字を使ったカスタムアイコンを作成
+                // loc.emoji があればそれを使い、なければデフォルトの絵文字（📍など）を使う例
+                const emoji = loc.emoji || '📍';
+
+                const emojiIcon = L.divIcon({
+                    html: `<span style="font-size: 24px; line-height: 1;">${emoji}</span>`,
+                    className: 'custom-emoji-icon', // デフォルトの白背景や枠線を消すためのクラス
+                    iconSize: [30, 30],             // アイコン全体のサイズ
+                    iconAnchor: [15, 15],           // 座標の真上に絵文字の中心が来るように調整 (iconSizeの半分)
+                    popupAnchor: [0, -15]           // ポップアップが絵文字の直上に出るように調整
+                });
+
+                // 2. 作成した icon オプションを指定してマーカーを作成
+                L.marker([loc.lat, loc.lng], { icon: emojiIcon })
+                    .addTo(map)
+                    .bindPopup(`<b>${loc.name}</b><br>${loc.memo || ''}`);
+            });
+        }
+
+        // 3. 地図をクリックしたときに地点を保存する
+        map.on('click', async (e) => {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+
+            const name = prompt("地点の名前を入力してください:");
+            if (!name) return;
+
+            const memo = prompt("メモを入力してください (任意):");
+
+            // GoのAPIへPOST送信
+            const res = await fetch('/api/locations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, lat, lng, memo })
+            });
+
+            if (res.ok) {
+                // ピンを即座に追加
+                L.marker([lat, lng])
+                    .addTo(map)
+                    .bindPopup(`<b>${name}</b><br>${memo || ''}`)
+                    .openPopup();
+            } else {
+                alert("保存に失敗しました");
+            }
+        });
+
+        // 初期ロード実行
+        loadLocations();
+    </script>
+</body>
+
+</html>

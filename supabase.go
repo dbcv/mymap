@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 )
@@ -75,4 +76,50 @@ func fetchSupabaseUser(accessToken string) (*UserResponse, error) {
 	}
 
 	return &user, nil
+}
+
+func fetchLocationsFromSupabase(token, userID string) ([]Location, error) {
+
+	req, err := http.NewRequest("GET", SupabaseURL+"/rest/v1/locations?user_id=eq."+userID+"&select=*", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("apikey", SupabaseAnonKey)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var locations []Location
+	if err := json.NewDecoder(resp.Body).Decode(&locations); err != nil {
+		return nil, err
+	}
+	return locations, nil
+}
+
+func createLocationInSupabase(token string, loc Location) error {
+	body, _ := json.Marshal(loc)
+	req, err := http.NewRequest("POST", SupabaseURL+"/rest/v1/locations", bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("apikey", SupabaseAnonKey)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Prefer", "return=minimal")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		log.Printf("Supabase save failed: %d", resp.StatusCode)
+		return fmt.Errorf("supabase save failed: %d", resp.StatusCode)
+	}
+	return nil
 }

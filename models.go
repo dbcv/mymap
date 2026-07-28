@@ -25,3 +25,12 @@ type PageData struct {
 	Email  string
 	UserID string
 }
+
+type Location struct {
+	ID     string  `json:"id,omitempty"`
+	UserID string  `json:"user_id,omitempty"`
+	Name   string  `json:"name"`
+	Lat    float64 `json:"lat"`
+	Lng    float64 `json:"lng"`
+	Memo   string  `json:"memo"`
+}
